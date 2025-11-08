@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmstrip Carousel Demo - Quang Vo</title>
+    <style>
+        /* không copy mấy cái này cho đến vùng có dòng ghi chút tiếp theo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* đoạn ở trên là không copy, bên dưới là copy lại để dùng trong style.css của bạn */
+
+        .carousel-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            padding: 20px 0;
+        }
+
+        .carousel-track {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+            gap: 20px;
+        }
+
+        .carousel-item {
+            flex: 0 0 calc(33.333% - 14px);
+            cursor: pointer;
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .carousel-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .carousel-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .arrow-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            font-size: 20px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .arrow-indicator:hover {
+            background: white;
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .arrow-left {
+            left: -20px;
+        }
+
+        .arrow-right {
+            right: -20px;
+        }
+
+        .content-area {
+            margin-top: 30px;
+            min-height: 200px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .content-area.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-style: italic;
+        }
+
+        .content-area h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .content-area p {
+            color: #555;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="carousel-container">
+        <div class="carousel-wrapper">
+            <div class="arrow-indicator arrow-left" onclick="moveCarousel('right')">←</div>
+            <div class="carousel-track" id="carouselTrack">
+                <div class="carousel-item" onclick="loadContent(0)">
+                    <img src="assets/slide1.jpg" alt="Mountain Lake">
+                </div>
+                <div class="carousel-item" onclick="loadContent(1)">
+                    <img src="assets/slide2.jpg" alt="Apple Cake">
+                </div>
+                <div class="carousel-item" onclick="loadContent(2)">
+                    <img src="assets/slide3.jpg" alt="Ocean Beach">
+                </div>
+                <div class="carousel-item" onclick="loadContent(3)">
+                    <img src="assets/slide4.jpg" alt="Starry Night">
+                </div>
+                <div class="carousel-item" onclick="loadContent(4)">
+                    <img src="assets/slide5.jpg" alt="Under Water">
+                </div>
+            </div>
+            <div class="arrow-indicator arrow-right" onclick="moveCarousel('left')">→</div>
+        </div>
+        
+        <div class="content-area empty" id="contentArea">
+            Click lên hình ảnh để xem nội dung ở đây.
+        </div>
+    </div>
+    <!-- đoạn script bên dưới luôn copy vào trước thẻ body đóng và sau mọi thẻ khác -->
+    <script>
+        const track = document.getElementById('carouselTrack');
+        const items = document.querySelectorAll('.carousel-item');
+        const contentArea = document.getElementById('contentArea');
+        const carouselWrapper = document.querySelector('.carousel-wrapper');
+        let currentIndex = 0;
+        let isPaused = false;
+        let autoPlayTimer = null;
+        let lastDirection = 'left'; // Default direction right to left
+        const INITIAL_DELAY = 5000; // 5 seconds initial delay
+        const SLIDE_DELAY = 7000; // 7 seconds per slide
+
+        const contentData = [
+            {
+                title: "1. Hồ trên núi",
+                description: "Đó là một vùng hồ nhiều cảnh đẹp, các cặp đôi đến rồi chỉ còn có một người trở về, đó là đìêu đặc biệt bí hiểm. Câu trả lời đó chỉ có thể được tìm thấy khi bạn đi cùng người khác với tư cách là một cặp đôi và bạn sẽ trở về một mình. Đây là cảnh đẹp rất đáng cho các cặp đôi muối chim trắng mồ côi."
+            },
+            {
+                title: "2. Bánh táo",
+                description: "Người Mỹ rất tự hào đây là thứ bánh được xem là món quốc dân của họ. Bánh được làm từ những trái táo được trồng trên đất Mỹ. Bánh luôn là món được các bà nội trợ thập niên bảy mươi mang ra đãi khách quý. Tổng thống Donald Trump ghiền món này đến mức mang theo vài valy khi công du nước ngoài."
+            },
+            {
+                title: "3. Bãi biến Phan Thiết",
+                description: "Đây là một trong những bãi biển đẹp nhất VIệt Nam nếu không muốn nói là hàng đầu Đông Nam Á. Dạo chơi trên bãi biển mõi bình minh hoặc hoàng hôn bạn có thể bắt gặp nàng tiên cá. Chuyện ngày nghe có vẻ không thể tin được nhưng nó đã diễn ra vài năm."
+            },
+            {
+                title: "4. Bầu trời đêm đầy sao",
+                description: "Vào ban đêm khi bạn đứng ở núi cao xa thành phố nhìn lên bầu trời sẽ thấy sáng lấp lánh. Trong số hàng ngàn ngôi sao có thể nhìn thấy, một dải sáng bàng bạc đó chính là giải ngân hàng Milky Way. Một khi bạn thấy cái này, bạn sẽ nhớ đến chuyện Ngưu Lang - Chức Nữ."
+            },
+            {
+                title: "4. Dưỡi mặt nước biển",
+                description: "Khi lặn biển bạn sẽ thấy một thế giới vô cùng phong phú. Một trong những điều gây ngạc nhiên nhất đó là những bong bóng kêu lục bục như nước sôi khiến bạn tự hỏi liệu có phải con cá voi nào đang làm chuyện bí mật gì đó mà bạn chưa từng biết. Thực sự, biển không có màu xanh."
+            }
+        ];
+
+        function updateCarousel() {
+            const itemWidth = items[0].offsetWidth + 20; // width + gap
+            const offset = -currentIndex * itemWidth;
+            track.style.transform = `translateX(${offset}px)`;
+        }
+
+        function moveCarousel(direction) {
+            if (direction === 'left') {
+                // Moving left means showing next items (right to left visual)
+                currentIndex = (currentIndex + 1) % (items.length - 2);
+            } else {
+                // Moving right means showing previous items (left to right visual)
+                currentIndex = (currentIndex - 1 + (items.length - 2)) % (items.length - 2);
+            }
+            lastDirection = direction; // Remember last clicked direction
+            updateCarousel();
+            resetAutoPlay(); // Reset timer after manual navigation
+        }
+
+        function autoMove() {
+            if (!isPaused) {
+                moveCarousel(lastDirection);
+            }
+        }
+
+        function startAutoPlay(delay = SLIDE_DELAY) {
+            clearTimeout(autoPlayTimer);
+            autoPlayTimer = setTimeout(() => {
+                autoMove();
+                startAutoPlay(SLIDE_DELAY); // Continue with slide delay
+            }, delay);
+        }
+
+        function resetAutoPlay() {
+            startAutoPlay(SLIDE_DELAY);
+        }
+
+        function stopAutoPlay() {
+            clearTimeout(autoPlayTimer);
+        }
+
+        function loadContent(index) {
+            const data = contentData[index];
+            contentArea.classList.remove('empty');
+            contentArea.innerHTML = `
+                <h2>${data.title}</h2>
+                <p>${data.description}</p>
+            `;
+        }
+
+        // Pause on hover over carousel wrapper
+        carouselWrapper.addEventListener('mouseenter', () => {
+            isPaused = true;
+            stopAutoPlay();
+        });
+        
+        carouselWrapper.addEventListener('mouseleave', () => {
+            isPaused = false;
+            startAutoPlay(SLIDE_DELAY); // Resume with 10 second delay
+        });
+
+        // Pause on hover over individual items (redundant but explicit)
+        items.forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                isPaused = true;
+            });
+            
+            item.addEventListener('mouseleave', () => {
+                isPaused = false;
+            });
+        });
+
+        // Initialize
+        updateCarousel();
+        
+        // Start autoplay after initial 5 second delay on window load
+        window.addEventListener('load', () => {
+            startAutoPlay(INITIAL_DELAY);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', updateCarousel);
+    </script>
+</body>
+</html>
